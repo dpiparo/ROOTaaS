@@ -8,6 +8,8 @@ def iPythonize(ROOTClasses):
     and the json representation of the object.
     """
     for ROOTClass in ROOTClasses:
+       ROOTClass._repr_javascript_ = lambda obj: "Hello."
+       # for debugging purposes
        ROOTClass.__repr__ = lambda obj: "Hello."
 
 
