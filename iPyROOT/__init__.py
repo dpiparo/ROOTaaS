@@ -1,6 +1,6 @@
-import os, sys, select
+import os, sys, select, time
 from IPython import get_ipython
-from IPython.display import Javascript
+from IPython.display import HTML
 from IPython.display import display
 import ROOT
 
@@ -12,16 +12,11 @@ _jsCanvasWidth = 800
 _jsCanvasHeight = 600
 
 _jsCode = """
-// Create DIV
-var timestamp = Math.floor(new Date().getTime() / 1000);
-var divName = 'object_draw_' + timestamp;
-var plotDiv = document.createElement('div');
-plotDiv.id = divName;
-plotDiv.style.width = "{jsCanvasWidth}px"
-plotDiv.style.height = "{jsCanvasHeight}px";
-element[0].appendChild(plotDiv);
+<div id="{jsDivId}"
+     style="width: {jsCanvasWidth}px; height: {jsCanvasHeight}px">
+</div>
 
-// Draw object
+<script>
 require(['{jsROOTSourceDir}scripts/JSRootCore.min.js'],
         function() {{
             require(['{jsROOTSourceDir}scripts/d3.v3.min.js'],
@@ -31,13 +26,14 @@ require(['{jsROOTSourceDir}scripts/JSRootCore.min.js'],
 define.amd = null;
 JSROOT.source_dir = "{jsROOTSourceDir}";
 var obj = JSROOT.parse('{jsonContent}');
-JSROOT.draw(divName, obj, "{jsDrawOptions}");
+JSROOT.draw("{jsDivId}", obj, "{jsDrawOptions}");
                         }}
                     );
                 }}
             );
         }}
 );
+</script>
 """
 
 class StreamCapture(object):
@@ -104,14 +100,16 @@ class canvasUpdate(object):
         json = ROOT.TBufferJSON.ConvertToJSON(pad, 3)
 
         # Here we could optimise the string manipulation
+        divId = 'root_plot_' + str(int(time.time()))
         thisJsCode = _jsCode.format(jsCanvasWidth = _jsCanvasWidth,
                                     jsCanvasHeight = _jsCanvasHeight,
                                     jsROOTSourceDir = _jsROOTSourceDir,
                                     jsonContent=json.Data(),
-                                    jsDrawOptions="")
+                                    jsDrawOptions="",
+                                    jsDivId = divId)
 
         # display is the key point of this hook
-        display(Javascript(thisJsCode))
+        display(HTML(thisJsCode))
 
         return 0
 
