@@ -1,58 +1,17 @@
-import tempfile
-import IPython.core.magic as ipym
-from IPython.core import display
+import os, sys, select
+from IPython import get_ipython
 from IPython.display import Javascript
+from IPython.display import display
 import ROOT
 
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
 
-# Useful parameters
+_jsROOTSourceDir = "https://root.cern.ch/js/3.4/"
+_jsCanvasWidth = 800
+_jsCanvasHeight = 600
 
-# We need an automatic mechanism: ldd, rootmaps whatever
-__classesToiPythonize = [ROOT.TH1,
-ROOT.TH2,
-ROOT.TH3,
-ROOT.TH1C,
-ROOT.TH1D,
-ROOT.TH1F,
-ROOT.TH1I,
-ROOT.TH1K,
-ROOT.TH1S,
-ROOT.TH2C,
-ROOT.TH2D,
-ROOT.TH2F,
-ROOT.TH2I,
-ROOT.TH2S,
-ROOT.TH3C,
-ROOT.TH3D,
-ROOT.TH3F,
-ROOT.TH3I,
-ROOT.TH3S,
-ROOT.TH2Poly,
-ROOT.TGraphTime,
-ROOT.TGraphErrors,
-ROOT.TGraphSmooth,
-ROOT.TGraph2DErrors,
-ROOT.TGraphDelaunay,
-ROOT.TGraphBentErrors,
-ROOT.TGraphAsymmErrors,
-ROOT.TGraph,
-ROOT.TGraph2D,
-ROOT.TGraphPolar,
-ROOT.TGraphPolargram,
-ROOT.TGraphQQ,
-ROOT.TLine,
-ROOT.TLink,
-ROOT.TLatex,
-ROOT.TLegend,
-ROOT.TCanvas]
-
-__jsROOTSourceDir = "https://root.cern.ch/js/3.4/"
-__jsCanvasWidth = 800
-__jsCanvasHeight = 600
-
-__jsCode = """
+_jsCode = """
 // Create DIV
 var timestamp = Math.floor(new Date().getTime() / 1000);
 var divName = 'object_draw_' + timestamp;
@@ -64,56 +23,107 @@ element[0].appendChild(plotDiv);
 
 // Draw object
 require(['{jsROOTSourceDir}scripts/JSRootCore.min.js'],
-        function() {{{{
+        function() {{
             require(['{jsROOTSourceDir}scripts/d3.v3.min.js'],
-                function() {{{{
+                function() {{
                     require(['{jsROOTSourceDir}scripts/JSRootPainter.min.js'],
-                        function() {{{{
+                        function() {{
 define.amd = null;
 JSROOT.source_dir = "{jsROOTSourceDir}";
-var obj = JSROOT.parse('{{jsonContent}}');
-JSROOT.draw(divName, obj, "{{jsDrawOptions}}");
-                        }}}}
+var obj = JSROOT.parse('{jsonContent}');
+JSROOT.draw(divName, obj, "{jsDrawOptions}");
+                        }}
                     );
-                }}}}
+                }}
             );
-        }}}}
+        }}
 );
 """
 
+class StreamCapture(object):
+    def __init__(self, ip, stream):
+        streamsFileNo={sys.stderr:2,sys.stdout:1}
+        self.pipe_out = None
+        self.pipe_in = None
+        self.sysStreamFile = stream
+        self.sysStreamFileNo = streamsFileNo[stream]
+        self.shell = ip
+
+    def more_data(self):
+        r, _, _ = select.select([self.pipe_out], [], [], 0)
+        return bool(r)
+
+    def pre_execute(self):
+        sys.stdout.write(' \b')
+        self.pipe_out, self.pipe_in = os.pipe()
+        os.dup2(self.pipe_in, self.sysStreamFileNo)
+
+    def post_execute(self):
+        out = ''
+        if self.pipe_out:
+            while self.more_data():
+                out += os.read(self.pipe_out, 1024)
+
+        self.sysStreamFile.write(out)
+        return 0
+
+    def register(self):
+        self.shell.events.register('pre_execute', self.pre_execute)
+        self.shell.events.register('post_execute', self.post_execute)
+
+class canvasUpdate(object):
+    def __init__(self, ip):
+        self.shell = ip
+        self.canvas = None
+        self.numberOfPrimitives = 0
+
+    def hasGPad(self):
+        if not sys.modules.has_key("ROOT"): return False
+        if not ROOT.gPad: return False
+        return True
+
+    def pre_execute(self):
+        if not self.hasGPad(): return 0
+        gPad = ROOT.gPad
+        self.numberOfPrimitives = len(gPad.GetListOfPrimitives())
+        self.primitivesNames = map(lambda p: p.GetName(), gPad.GetListOfPrimitives())
+        self.canvas = gPad
+
+    def hasDifferentPrimitives(self):
+        newPrimitivesNames = map(lambda p: p.GetName(), ROOT.gPad.GetListOfPrimitives())
+        return newPrimitivesNames != self.primitivesNames
+
+    def post_execute(self):
+        if not self.hasGPad(): return 0
+        gPad = ROOT.gPad
+        isNew = not self.canvas
+        if not (isNew or self.hasDifferentPrimitives()): return 0
+
+        # Workaround to have ConvertToJSON work
+        pad = ROOT.gROOT.GetListOfCanvases().FindObject(ROOT.gPad.GetName())
+        json = ROOT.TBufferJSON.ConvertToJSON(pad, 3)
+
+        # Here we could optimise the string manipulation
+        thisJsCode = _jsCode.format(jsCanvasWidth = _jsCanvasWidth,
+                                    jsCanvasHeight = _jsCanvasHeight,
+                                    jsROOTSourceDir = _jsROOTSourceDir,
+                                    jsonContent=json.Data(),
+                                    jsDrawOptions="")
+
+        # display is the key point of this hook
+        display(Javascript(thisJsCode))
+
+        return 0
+
+    def register(self):
+        self.shell.events.register('pre_execute', self.pre_execute)
+        self.shell.events.register('post_execute', self.post_execute)
+
 def iPythonize():
-    """
-    Add an implementation of the Draw() function which involves javascript
-    and the json representation of the object.
-    """
-
-    # Keep the Draw method of C++ aside
-    for ROOTClass in __classesToiPythonize:
-       ROOTClass.CppDraw = ROOTClass.Draw
-
-    # Format string with all parameters but the json and draw options
-    preFormattedJSCode = __jsCode.format(jsCanvasWidth = __jsCanvasWidth,
-                                         jsCanvasHeight = __jsCanvasHeight,
-                                         jsROOTSourceDir = __jsROOTSourceDir)
-
-    # This is the draw function we'll invoke instead of the C++ one
-    def PyDraw(self, drawOptions=""):
-
-       # Draw "in ROOT" before going to the pythonisation
-       try:
-         self.CppDraw(drawOptions)
-       except:
-         self.CppDraw()
-
-       json = ROOT.TBufferJSON.ConvertToJSON(self, 3)
-       thisJsCode = preFormattedJSCode.format(jsonContent=json.Data(),
-                                              jsDrawOptions=drawOptions)
-
-       return Javascript(thisJsCode)
-
-    # Now pythonise the Draw method
-    for ROOTClass in __classesToiPythonize:
-       ROOTClass.Draw = PyDraw
+    StreamCapture(get_ipython(),sys.stderr).register()
+    StreamCapture(get_ipython(),sys.stdout).register()
+    canvasUpdate(get_ipython()).register()
 
 iPythonize()
+
 
