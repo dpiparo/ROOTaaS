@@ -1,4 +1,5 @@
 import IPython.core.magic as ipym
+import ROOT
 
 @ipym.magics_class
 class CppMagics(ipym.Magics):
