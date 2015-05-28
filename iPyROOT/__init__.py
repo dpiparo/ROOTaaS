@@ -117,7 +117,15 @@ class canvasUpdate(object):
         self.shell.events.register('pre_execute', self.pre_execute)
         self.shell.events.register('post_execute', self.post_execute)
 
+def setStyle():
+    ROOT.gStyle.SetFuncWidth(3)
+    ROOT.gStyle.SetHistLineWidth(3)
+    ROOT.gStyle.SetMarkerStyle(8)
+    ROOT.gStyle.SetMarkerSize(.5)
+    ROOT.gStyle.SetMarkerColor(ROOT.kBlue)
+
 def iPythonize():
+    setStyle()
     StreamCapture(get_ipython(),sys.stderr).register()
     StreamCapture(get_ipython(),sys.stdout).register()
     canvasUpdate(get_ipython()).register()
