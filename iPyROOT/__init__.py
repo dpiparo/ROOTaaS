@@ -11,6 +11,7 @@ def setStyle():
     style.SetMarkerStyle(8)
     style.SetMarkerSize(.5)
     style.SetMarkerColor(ROOT.kBlue)
+    style.SetOptStat(0)
 
 def iPythonize():
     setStyle()

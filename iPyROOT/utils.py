@@ -1,11 +1,14 @@
-import os, sys, select, time
+import os, sys, select, time, tempfile
 from IPython import get_ipython
+import itertools
 from IPython.display import HTML
-from IPython.display import display
+import IPython.display
 import ROOT
 
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
+
+_jsNotDrawableClassesNames = ["TGraph2D"]
 
 _jsROOTSourceDir = "https://root.cern.ch/js/3.4/"
 _jsCanvasWidth = 800
@@ -89,12 +92,18 @@ class CanvasCapture(object):
         newPrimitivesNames = map(lambda p: p.GetName(), ROOT.gPad.GetListOfPrimitives())
         return newPrimitivesNames != self.primitivesNames
 
-    def post_execute(self):
-        if not self.hasGPad(): return 0
-        gPad = ROOT.gPad
-        isNew = not self.canvas
-        if not (isNew or self.hasDifferentPrimitives()): return 0
+    def canJsDisplay(self):
+        # to be optimised
+        primitivesNames = map(lambda prim: prim.Class().GetName() , ROOT.gPad.GetListOfPrimitives())
+        for jsNotDrawClassName in _jsNotDrawableClassesNames:
+            if jsNotDrawClassName in primitivesNames:
+                print >> sys.stderr, "The canvas contains an object which jsROOT cannot currently handle (%s). Falling back to a static png." %jsNotDrawClassName
+                return False
+        return True
 
+
+
+    def jsDisplay(self):
         # Workaround to have ConvertToJSON work
         pad = ROOT.gROOT.GetListOfCanvases().FindObject(ROOT.gPad.GetName())
         json = ROOT.TBufferJSON.ConvertToJSON(pad, 3)
@@ -109,7 +118,30 @@ class CanvasCapture(object):
                                     jsDivId = divId)
 
         # display is the key point of this hook
-        display(HTML(thisJsCode))
+        IPython.display.display(HTML(thisJsCode))
+        return 0
+
+    def pngDisplay(self):
+        ofile = tempfile.NamedTemporaryFile(suffix=".png")
+        ROOT.gPad.SaveAs(ofile.name)
+        img = IPython.display.Image(filename=ofile.name, format='png', embed=True)
+        IPython.display.display(img)
+        return 0
+
+    def display(self):
+       if self.canJsDisplay():
+           self.jsDisplay()
+       else:
+           self.pngDisplay()
+
+
+    def post_execute(self):
+        if not self.hasGPad(): return 0
+        gPad = ROOT.gPad
+        isNew = not self.canvas
+        if not (isNew or self.hasDifferentPrimitives()): return 0
+
+        self.display()
 
         return 0
 
