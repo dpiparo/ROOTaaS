@@ -161,7 +161,7 @@ def processCppCode(cell):
     for capture in utils.captures: capture.pre_execute()
     retval = utils.processCppCodeImpl(cell)
     for capture in utils.captures: capture.post_execute()
-
+    return retval
 
 
 
