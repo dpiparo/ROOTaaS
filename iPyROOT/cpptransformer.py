@@ -1,26 +1,49 @@
 import ROOT
 import utils
 from IPython.core.inputtransformer import InputTransformer
+from IPython import get_ipython
+
+
+def unload_ipython_extension(ipython):
+    ipython.input_splitter.logical_line_transforms.pop()
+    ipython.input_transformer_manager.logical_line_transforms.pop()
+    print "Notebook is in Python mode"
 
 class CppTransformer(InputTransformer):
 
     def __init__(self):
         self.cell = ""
+        self.mustSwitchToPython = False
+        self.mustDeclare = False
 
     def push(self, line):
-	self.cell += line
+        # FIXME: must be in a single line
+        fcnName="toPython()"
+        if line == "%s;"%fcnName or line == fcnName:
+            self.mustSwitchToPython = True
+        elif line == ".dcl" and self.cell == "":
+            self.mustDeclare = True
+        else:
+            self.cell += line
         return None
-    
+
     def reset(self):
         retval = 0
         if self.cell != "":
-            retval = utils.processCppCode(self.cell)
+            if self.mustDeclare:
+                retval = int(utils.declareCppCode(self.cell))
+                self.mustDeclare = False
+            else:
+                retval = utils.processCppCode(self.cell)
             self.cell = ""
+        if self.mustSwitchToPython:
+            unload_ipython_extension(get_ipython())
+            self.mustSwitchToPython = False
         return str(retval)
 
-         
-def load_ipython_extension(ipython):
-    t = CppTransformer()
-    ipython.input_splitter.logical_line_transforms.append(t)
-    ipython.input_transformer_manager.logical_line_transforms.append(t)
+_transformer = CppTransformer()
 
+def load_ipython_extension(ipython):
+    ipython.input_splitter.logical_line_transforms.append(_transformer)
+    ipython.input_transformer_manager.logical_line_transforms.append(_transformer)
+    print "Notebook is in Cpp mode"

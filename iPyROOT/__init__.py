@@ -1,7 +1,8 @@
 from IPython.core.extensions import ExtensionManager
-from IPython import get_ipython
+from IPython import get_ipython, config
 import ROOT
 import utils
+import cpptransformer
 
 
 # We want iPython to take over the graphics
@@ -20,6 +21,10 @@ def iPythonize():
     setStyle()
     for capture in utils.captures: capture.register()
     ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
+    #ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.dclmagic")
+
+def toCpp():
+    cpptransformer.load_ipython_extension(get_ipython())
 
 iPythonize()
 

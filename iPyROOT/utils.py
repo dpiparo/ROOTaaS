@@ -1,10 +1,13 @@
-import os, sys, select, time, tempfile
-from IPython import get_ipython
+import os
+import sys
+import select
+import time
+import tempfile
 import itertools
+from IPython import get_ipython
 from IPython.display import HTML
 import IPython.display
 import ROOT
-import utils
 
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
@@ -76,6 +79,7 @@ class CanvasCapture(object):
         self.shell = ip
         self.canvas = None
         self.numberOfPrimitives = 0
+        self.jsUID = 0
 
     def hasGPad(self):
         if not sys.modules.has_key("ROOT"): return False
@@ -102,7 +106,9 @@ class CanvasCapture(object):
                 return False
         return True
 
-
+    def getUID(self):
+        self.jsUID += 1
+        return self.jsUID
 
     def jsDisplay(self):
         # Workaround to have ConvertToJSON work
@@ -110,7 +116,7 @@ class CanvasCapture(object):
         json = ROOT.TBufferJSON.ConvertToJSON(pad, 3)
 
         # Here we could optimise the string manipulation
-        divId = 'root_plot_' + str(int(time.time()))
+        divId = 'root_plot_' + str(self.getUID())
         thisJsCode = _jsCode.format(jsCanvasWidth = _jsCanvasWidth,
                                     jsCanvasHeight = _jsCanvasHeight,
                                     jsROOTSourceDir = _jsROOTSourceDir,
@@ -157,11 +163,19 @@ captures = [StreamCapture(sys.stderr),
 def processCppCodeImpl(cell):
     return ROOT.gInterpreter.ProcessLine(cell)
 
+def declareCppCodeImpl(cell):
+    return ROOT.gInterpreter.Declare(cell)
+
 def processCppCode(cell):
-    for capture in utils.captures: capture.pre_execute()
-    retval = utils.processCppCodeImpl(cell)
-    for capture in utils.captures: capture.post_execute()
+    for capture in captures: capture.pre_execute()
+    retval = processCppCodeImpl(cell)
+    for capture in captures: capture.post_execute()
     return retval
 
+def declareCppCode(cell):
+    for capture in captures: capture.pre_execute()
+    retval = declareCppCodeImpl(cell)
+    for capture in captures: capture.post_execute()
+    return retval
 
 
