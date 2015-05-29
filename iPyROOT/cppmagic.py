@@ -14,7 +14,7 @@ class CppMagics(ipym.Magics):
         retval = 0
         if cell:
             for capture in utils.captures: capture.pre_execute()
-            retval = ROOT.gInterpreter.ProcessLine(cell)
+            retval = ROOT.gInterpreter.Declare(cell)
             for capture in utils.captures: capture.post_execute()
         return 0
 
