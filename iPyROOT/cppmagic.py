@@ -13,10 +13,8 @@ class CppMagics(ipym.Magics):
         """Inject into root."""
         retval = 0
         if cell:
-            for capture in utils.captures: capture.pre_execute()
-            retval = ROOT.gInterpreter.Declare(cell)
-            for capture in utils.captures: capture.post_execute()
-        return 0
+            retval = utils.processCppCode(cell)
+        return retval
 
 def load_ipython_extension(ipython):
     ipython.register_magics(CppMagics)

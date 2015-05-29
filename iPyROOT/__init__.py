@@ -1,5 +1,8 @@
+from IPython.core.extensions import ExtensionManager
+from IPython import get_ipython
 import ROOT
 import utils
+
 
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
@@ -16,6 +19,7 @@ def setStyle():
 def iPythonize():
     setStyle()
     for capture in utils.captures: capture.register()
+    #ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
 
 iPythonize()
 

@@ -4,6 +4,7 @@ import itertools
 from IPython.display import HTML
 import IPython.display
 import ROOT
+import utils
 
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
@@ -152,3 +153,15 @@ class CanvasCapture(object):
 captures = [StreamCapture(sys.stderr),
             StreamCapture(sys.stdout),
             CanvasCapture()]
+
+def processCppCodeImpl():
+    return ROOT.gInterpreter.Declare(cell)
+
+def processCppCode(cell):
+    for capture in utils.captures: capture.pre_execute()
+    retval = utils.processCppCodeImpl(cell)
+    for capture in utils.captures: capture.post_execute()
+
+
+
+
