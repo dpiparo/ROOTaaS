@@ -154,8 +154,8 @@ captures = [StreamCapture(sys.stderr),
             StreamCapture(sys.stdout),
             CanvasCapture()]
 
-def processCppCodeImpl():
-    return ROOT.gInterpreter.Declare(cell)
+def processCppCodeImpl(cell):
+    return ROOT.gInterpreter.ProcessLine(cell)
 
 def processCppCode(cell):
     for capture in utils.captures: capture.pre_execute()
