@@ -57,7 +57,7 @@ class StreamCapture(object):
         return bool(r)
 
     def pre_execute(self):
-        sys.stdout.write(' \b')
+        #self.sysStreamFile.write(' \b')
         self.pipe_out, self.pipe_in = os.pipe()
         os.dup2(self.pipe_in, self.sysStreamFileNo)
 
@@ -167,15 +167,11 @@ def declareCppCodeImpl(cell):
     return ROOT.gInterpreter.Declare(cell)
 
 def processCppCode(cell):
-    for capture in captures: capture.pre_execute()
     retval = processCppCodeImpl(cell)
-    for capture in captures: capture.post_execute()
     return retval
 
 def declareCppCode(cell):
-    for capture in captures: capture.pre_execute()
     retval = declareCppCodeImpl(cell)
-    for capture in captures: capture.post_execute()
     return retval
 
 
