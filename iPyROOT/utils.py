@@ -32,6 +32,7 @@ require(['{jsROOTSourceDir}scripts/JSRootCore.min.js'],
                         function() {{
 define.amd = null;
 JSROOT.source_dir = "{jsROOTSourceDir}";
+JSROOT.loadScript("{jsROOTSourceDir}style/JSRootPainter.min.css");
 var obj = JSROOT.parse('{jsonContent}');
 JSROOT.draw("{jsDivId}", obj, "{jsDrawOptions}");
                         }}
