@@ -19,7 +19,7 @@ def setStyle():
 def iPythonize():
     setStyle()
     for capture in utils.captures: capture.register()
-    #ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
+    ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
 
 iPythonize()
 
