@@ -1,8 +1,4 @@
-import os, sys, select, time
 import IPython.core.magic as ipym
-from IPython import get_ipython
-from IPython.display import HTML
-from IPython.display import display
 import ROOT
 import utils
 
