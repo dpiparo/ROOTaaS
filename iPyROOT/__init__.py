@@ -4,27 +4,23 @@ import ROOT
 import utils
 import cpptransformer
 
-
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
 
-def setStyle():
-    style=ROOT.gStyle
-    style.SetFuncWidth(3)
-    style.SetHistLineWidth(3)
-    style.SetMarkerStyle(8)
-    style.SetMarkerSize(.5)
-    style.SetMarkerColor(ROOT.kBlue)
-    style.SetOptStat(0)
-
-def iPythonize():
-    setStyle()
-    for capture in utils.captures: capture.register()
-    ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
-    #ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.dclmagic")
+def welcomeMsg():
+    print "Welcome to ROOTaas Beta"
 
 def toCpp():
     cpptransformer.load_ipython_extension(get_ipython())
+
+def iPythonize():
+    utils.setStyle()
+    for capture in utils.captures: capture.register()
+    ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
+    ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.dclmagic")
+    ROOT.toCpp = toCpp
+    welcomeMsg()
+
 
 iPythonize()
 
