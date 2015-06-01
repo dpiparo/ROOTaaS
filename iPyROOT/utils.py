@@ -148,8 +148,15 @@ class CanvasCapture(object):
         gPad = ROOT.gPad
         isNew = not self.canvas
         if not (isNew or self.hasDifferentPrimitives()): return 0
+        gPad.Update()
+
+        parentCanvas = gPad.GetCanvas()
+        if (parentCanvas):
+           ROOT.gPad=parentCanvas
 
         self.display()
+
+        ROOT.gPad=gPad
 
         return 0
 
@@ -182,6 +189,6 @@ def setStyle():
     style.SetMarkerStyle(8)
     style.SetMarkerSize(.5)
     style.SetMarkerColor(ROOT.kBlue)
-    style.SetPalette(53)
+    style.SetPalette(57)
 #    style.SetOptStat(0) # Remove statbox
 
