@@ -13,10 +13,11 @@ from ROOTaaS.iPyROOT import ROOT
 h = ROOT.TH1F("h","iPython Histo;X;Y",64,-4,4)
 h.FillRandom("gaus")
 h.Draw()
+```
 
 ## Magics and interaction with C++
-* %%cpp for marking a cell for C++
-* %%dcl for marking a cell for declaring C++ (e.g. for functions)
-* ROOT.toCpp() to move from Python to C++
-* toPython() to move from C++ to Python
-* .decl for marking a cell for declaring C++ (e.g. for functions) in C++ mode (as %%dcl)
+ * %%cpp for marking a cell for C++
+ * %%dcl for marking a cell for declaring C++ (e.g. for functions)
+ * ROOT.toCpp() to move from Python to C++
+ * toPython() to move from C++ to Python
+ * .decl for marking a cell for declaring C++ (e.g. for functions) in C++ mode (as %%dcl)
