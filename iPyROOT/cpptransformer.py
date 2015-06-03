@@ -2,12 +2,11 @@ import ROOT
 import utils
 from IPython.core.inputtransformer import InputTransformer
 from IPython import get_ipython
-
+import cppcompleter
 
 def unload_ipython_extension(ipython):
     ipython.input_splitter.logical_line_transforms.pop()
     ipython.input_transformer_manager.logical_line_transforms.pop()
-    print "Notebook is in Python mode"
 
 class CppTransformer(InputTransformer):
 
@@ -39,6 +38,8 @@ class CppTransformer(InputTransformer):
         if self.mustSwitchToPython:
             unload_ipython_extension(get_ipython())
             self.mustSwitchToPython = False
+            cppcompleter.unload_ipython_extension(get_ipython())
+            print "Notebook is in Python mode"
         return str(retval)
 
 _transformer = CppTransformer()
@@ -46,4 +47,3 @@ _transformer = CppTransformer()
 def load_ipython_extension(ipython):
     ipython.input_splitter.logical_line_transforms.append(_transformer)
     ipython.input_transformer_manager.logical_line_transforms.append(_transformer)
-    print "Notebook is in Cpp mode"

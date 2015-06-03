@@ -3,6 +3,7 @@ from IPython import get_ipython, config
 import ROOT
 import utils
 import cpptransformer
+import cppcompleter
 
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
@@ -12,6 +13,8 @@ def welcomeMsg():
 
 def toCpp():
     cpptransformer.load_ipython_extension(get_ipython())
+    cppcompleter.load_ipython_extension(get_ipython())
+    print "Notebook is in Cpp mode"
 
 def iPythonize():
     utils.setStyle()
