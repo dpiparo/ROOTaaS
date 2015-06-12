@@ -1,11 +1,23 @@
 
-import re        
+import ROOT
 
-re_dot_match = re.compile(r"(.+)(\.)")
+# Jit a wrapper for the ttabcom
+_TTabComHookCode = """
+std::vector<std::string> _TTabComHook(const char* pattern){
+  static auto ttc = new TTabCom;
+  int pLoc = strlen(pattern);
+  std::ostringstream oss;
+  ttc->Hook((char* )pattern, &pLoc, oss);
+  std::stringstream ss(oss.str());
+  std::istream_iterator<std::string> vbegin(ss), vend;
+  return std::vector<std::string> (vbegin, vend);
+}
+"""
 
 class CppCompleter(object):
 
     def __init__(self):
+        ROOT.gInterpreter.Declare(_TTabComHookCode)
         self.active = True
 
     def activate(self):
@@ -14,39 +26,18 @@ class CppCompleter(object):
     def deactivate(self):
         self.active = False
 
-    def dot_completer(self, ip, event):
-        # text ends in '.'
+    def complete(self, ip, event) :
         if self.active:
-            base = re_dot_match.split(event.line)[1]
-
-            sugg = ['These', 'are', 'dummy', 'suggestions']
-            return ["%s.%s" % (base, s) for s in sugg]
+           return ROOT._TTabComHook(event.line)
         else:
-            return []
-
-    def arrow_completer(self, ip, event):
-        # text ends in '->'
-        pass
-
-    def doublecolon_completer(self, ip, event):
-        # text ends in '::'
-        pass
-
-    def parenthesis_completer(self, ip, event):
-        # text ends in '('
-        pass
-
-    def word_completer(self, ip, event):
-        # text ends in a (possibly incomplete) word
-        pass
+           return []
 
 
-c = CppCompleter()
+_cppCompleter = CppCompleter()
 
 def load_ipython_extension(ipython):
-    c.activate()
-    ipython.set_hook('complete_command', c.dot_completer, re_key=r"(.+)(\.)")
-    # and others here
+    _cppCompleter.activate()
+    ipython.set_hook('complete_command', _cppCompleter.complete,re_key=r"(.+)")
 
 def unload_ipython_extension(ipython):
-    c.deactivate()
+    _cppCompleter.deactivate()
