@@ -1,5 +1,6 @@
-from IPython.core.extensions import ExtensionManager
 from IPython import get_ipython, config
+from IPython.core import display
+from IPython.core.extensions import ExtensionManager
 import ROOT
 import utils
 import cpptransformer
@@ -21,6 +22,7 @@ def iPythonize():
     for capture in utils.captures: capture.register()
     ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
     ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.dclmagic")
+    display.display_javascript("IPython.CodeCell.config_defaults.highlight_modes['magic_text/x-c++src'] = {'reg':[/^%%cpp|^%%dcl/]};", raw=True)
     ROOT.toCpp = toCpp
     welcomeMsg()
 
