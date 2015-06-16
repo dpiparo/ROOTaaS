@@ -12,6 +12,23 @@ import ROOT
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
 
+
+cppMIME = 'text/x-c++src'
+ipyMIME = 'text/x-ipython'
+
+jsDefaultHighlight = """
+// Set default mode for code cells
+IPython.CodeCell.options_default.cm_config.mode = '{mimeType}';
+// Set CodeMirror's current mode
+var cells = IPython.notebook.get_cells();
+cells[cells.length-1].code_mirror.setOption('mode', '{mimeType}');
+// Set current mode for newly created cell
+cells[cells.length-1].cm_config.mode = '{mimeType}';
+"""
+
+jsMagicHighlight = "IPython.CodeCell.config_defaults.highlight_modes['magic_{cppMIME}'] = {{'reg':[/^%%cpp|^%%dcl/]}};"
+
+
 _jsNotDrawableClassesNames = ["TGraph2D"]
 
 _jsROOTSourceDir = "https://root.cern.ch/js/3.4/"

@@ -7,6 +7,9 @@ import utils
 import cppcompleter
 import ROOT
 
+from IPython.core import display
+
+
 def commentRemover( text ):
    def blotOutNonNewlines( strIn ) :  # Return a string containing only the newline chars contained in strIn
       return "" + ("\n" * strIn.count('\n'))
@@ -62,6 +65,8 @@ class CppTransformer(InputTransformer):
             unload_ipython_extension(get_ipython())
             self.mustSwitchToPython = False
             cppcompleter.unload_ipython_extension(get_ipython())
+            # Change highlight mode
+            display.display_javascript(utils.jsDefaultHighlight.format(mimeType = utils.ipyMIME), raw=True)
             print "Notebook is in Python mode"
         return str(retval)
 
