@@ -25,6 +25,8 @@ def iPythonize():
     for capture in utils.captures: capture.register()
     ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")
     ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.dclmagic")
+    # Make sure clike JS lexer is loaded
+    display.display_javascript("require(['codemirror/mode/clike/clike'], function(Clike) { console.log('ROOTaaS - C++ CodeMirror module loaded'); });", raw=True)
     # Define highlight mode for %%cpp and %%dcl magics
     display.display_javascript(utils.jsMagicHighlight.format(cppMIME = utils.cppMIME), raw=True)
 
