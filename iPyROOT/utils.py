@@ -26,8 +26,6 @@ cells[cells.length-1].code_mirror.setOption('mode', '{mimeType}');
 cells[cells.length-1].cm_config.mode = '{mimeType}';
 """
 
-jsMagicHighlight = "IPython.CodeCell.config_defaults.highlight_modes['magic_{cppMIME}'] = {{'reg':[/^%%cpp|^%%dcl/]}};"
-
 
 _jsNotDrawableClassesNames = ["TGraph2D"]
 
