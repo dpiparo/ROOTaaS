@@ -48,18 +48,14 @@ class CppTransformer(InputTransformer):
         return None
 
     def reset(self):
-        retval = 0
         if self.cell != "":
             if self.mustDeclare:
-                retval = int(utils.declareCppCode(self.cell))
+                utils.declareCppCode(self.cell)
                 self.mustDeclare = False
             else:
                 cell = self.cell
                 code = commentRemover(self.cell)
-                #print cell
-                #print "---"
-                #print code
-                retval = utils.processCppCode(code)
+                utils.processCppCode(code)
             self.cell = ""
         if self.mustSwitchToPython:
             unload_ipython_extension(get_ipython())
@@ -68,7 +64,6 @@ class CppTransformer(InputTransformer):
             # Change highlight mode
             display.display_javascript(utils.jsDefaultHighlight.format(mimeType = utils.ipyMIME), raw=True)
             print "Notebook is in Python mode"
-        return str(retval)
 
 _transformer = CppTransformer()
 

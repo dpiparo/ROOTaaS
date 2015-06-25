@@ -73,7 +73,6 @@ class StreamCapture(object):
         return bool(r)
 
     def pre_execute(self):
-        #self.sysStreamFile.write(' \b')
         self.pipe_out, self.pipe_in = os.pipe()
         os.dup2(self.pipe_in, self.sysStreamFileNo)
 
@@ -115,6 +114,7 @@ class CanvasCapture(object):
 
     def canJsDisplay(self):
         # to be optimised
+        return False
         primitivesNames = map(lambda prim: prim.Class().GetName() , ROOT.gPad.GetListOfPrimitives())
         for jsNotDrawClassName in _jsNotDrawableClassesNames:
             if jsNotDrawClassName in primitivesNames:
@@ -184,18 +184,16 @@ captures = [StreamCapture(sys.stderr),
             CanvasCapture()]
 
 def processCppCodeImpl(cell):
-    return ROOT.gInterpreter.ProcessLine(cell)
+    ROOT.gInterpreter.ProcessLine(cell)
 
 def declareCppCodeImpl(cell):
-    return ROOT.gInterpreter.Declare(cell)
+    ROOT.gInterpreter.Declare(cell)
 
 def processCppCode(cell):
-    retval = processCppCodeImpl(cell)
-    return retval
+    processCppCodeImpl(cell)
 
 def declareCppCode(cell):
-    retval = declareCppCodeImpl(cell)
-    return retval
+    declareCppCodeImpl(cell)
 
 def setStyle():
     style=ROOT.gStyle
