@@ -4,10 +4,14 @@ import select
 import time
 import tempfile
 import itertools
+import ctypes
 from IPython import get_ipython
 from IPython.display import HTML
 import IPython.display
 import ROOT
+import cpptransformer
+import cppcompleter
+
 
 # We want iPython to take over the graphics
 ROOT.gROOT.SetBatch()
@@ -58,6 +62,22 @@ JSROOT.draw("{jsDivId}", obj, "{jsDrawOptions}");
 );
 </script>
 """
+
+def LoadLibrary(libName):
+   """
+   Dl-open a library bypassing the ROOT calling sequence
+   """
+   ctypes.cdll.LoadLibrary(libName)
+
+def welcomeMsg():
+    print "Welcome to ROOTaas Beta"
+
+def toCpp():
+    cpptransformer.load_ipython_extension(get_ipython())
+    cppcompleter.load_ipython_extension(get_ipython())
+    # Change highlight mode
+    IPython.display.display_javascript(jsDefaultHighlight.format(mimeType = cppMIME), raw=True)
+    print "Notebook is in Cpp mode"
 
 class StreamCapture(object):
     def __init__(self, stream, ip=get_ipython()):
