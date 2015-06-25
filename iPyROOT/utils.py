@@ -30,10 +30,12 @@ cells[cells.length-1].code_mirror.setOption('mode', '{mimeType}');
 cells[cells.length-1].cm_config.mode = '{mimeType}';
 """
 
+jsMagicHighlight = "IPython.CodeCell.config_defaults.highlight_modes['magic_{cppMIME}'] = {{'reg':[/^%%cpp|^%%dcl/]}};"
+
 
 _jsNotDrawableClassesNames = ["TGraph2D"]
 
-_jsROOTSourceDir = "https://root.cern.ch/js/3.4/"
+_jsROOTSourceDir = "https://root.cern.ch/js/dev/"
 _jsCanvasWidth = 800
 _jsCanvasHeight = 600
 
@@ -43,11 +45,11 @@ _jsCode = """
 </div>
 
 <script>
-require(['{jsROOTSourceDir}scripts/JSRootCore.min.js'],
+require(['{jsROOTSourceDir}scripts/JSRootCore.js'],
         function() {{
             require(['{jsROOTSourceDir}scripts/d3.v3.min.js'],
                 function() {{
-                    require(['{jsROOTSourceDir}scripts/JSRootPainter.min.js'],
+                    require(['{jsROOTSourceDir}scripts/JSRootPainter.js'],
                         function() {{
 define.amd = null;
 JSROOT.source_dir = "{jsROOTSourceDir}";
@@ -63,7 +65,7 @@ JSROOT.draw("{jsDivId}", obj, "{jsDrawOptions}");
 </script>
 """
 
-_enableJSVis = False
+_enableJSVis = True
 def enableJSVis():
     global _enableJSVis
     _enableJSVis = True
@@ -176,6 +178,7 @@ class CanvasCapture(object):
         # Workaround to have ConvertToJSON work
         pad = ROOT.gROOT.GetListOfCanvases().FindObject(ROOT.gPad.GetName())
         json = ROOT.TBufferJSON.ConvertToJSON(pad, 3)
+	#print "JSON:",json
 
         # Here we could optimise the string manipulation
         divId = 'root_plot_' + str(self.getUID())
