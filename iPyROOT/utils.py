@@ -63,6 +63,15 @@ JSROOT.draw("{jsDivId}", obj, "{jsDrawOptions}");
 </script>
 """
 
+_enableJSVis = False
+def enableJSVis():
+    global _enableJSVis
+    _enableJSVis = True
+
+def disableJSVis():
+    global _enableJSVis
+    _enableJSVis = False
+
 def LoadLibrary(libName):
    """
    Dl-open a library bypassing the ROOT calling sequence
@@ -113,28 +122,46 @@ class CanvasCapture(object):
     def __init__(self, ip=get_ipython()):
         self.shell = ip
         self.canvas = None
-        self.numberOfPrimitives = 0
+        self.primitivesNames = []
         self.jsUID = 0
+
+    def isCanvasEmpty(self):
+        if not ROOT.gPad: return True
+        return len(ROOT.gPad.GetListOfPrimitives()) == 0
 
     def hasGPad(self):
         if not sys.modules.has_key("ROOT"): return False
         if not ROOT.gPad: return False
         return True
 
+    def getListOfPrimitivesNames(self):
+       """
+       Get the list of primitives in the pad, recursively descending into
+       histograms and graphs looking for fitted functions.
+       """
+       if not ROOT.gPad: return []
+       primitives = ROOT.gPad.GetListOfPrimitives()
+       primitivesNames = map(lambda p: p.GetName(), primitives)
+       primitivesWithFunctions = filter(lambda primitive: hasattr(primitive,"GetListOfFunctions"), primitives)
+       for primitiveWithFunctions in primitivesWithFunctions:
+           for function in primitiveWithFunctions.GetListOfFunctions():
+               primitivesNames.append(function.GetName())
+       return sorted(primitivesNames)
+
     def pre_execute(self):
         if not self.hasGPad(): return 0
         gPad = ROOT.gPad
-        self.numberOfPrimitives = len(gPad.GetListOfPrimitives())
-        self.primitivesNames = map(lambda p: p.GetName(), gPad.GetListOfPrimitives())
+        self.primitivesNames = self.getListOfPrimitivesNames()
         self.canvas = gPad
 
     def hasDifferentPrimitives(self):
-        newPrimitivesNames = map(lambda p: p.GetName(), ROOT.gPad.GetListOfPrimitives())
+        newPrimitivesNames = self.getListOfPrimitivesNames()
         return newPrimitivesNames != self.primitivesNames
 
     def canJsDisplay(self):
         # to be optimised
-        primitivesNames = map(lambda prim: prim.Class().GetName() , ROOT.gPad.GetListOfPrimitives())
+        if not _enableJSVis: return False
+        primitivesNames = self.primitivesNames
         for jsNotDrawClassName in _jsNotDrawableClassesNames:
             if jsNotDrawClassName in primitivesNames:
                 print >> sys.stderr, "The canvas contains an object which jsROOT cannot currently handle (%s). Falling back to a static png." %jsNotDrawClassName
@@ -178,7 +205,7 @@ class CanvasCapture(object):
 
 
     def post_execute(self):
-        if not self.hasGPad(): return 0
+        if self.isCanvasEmpty() or not self.hasGPad(): return 0
         gPad = ROOT.gPad
         isNew = not self.canvas
         if not (isNew or self.hasDifferentPrimitives()): return 0

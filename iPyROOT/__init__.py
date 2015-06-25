@@ -11,6 +11,10 @@ def iPythonize():
     ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.dclmagic")
 
     ROOT.toCpp = utils.toCpp
+    ROOT.enableJSVis = utils.enableJSVis
+    ROOT.disableJSVis = utils.disableJSVis
+
+    #ROOT.toCpp()
     utils.welcomeMsg()
 
 
