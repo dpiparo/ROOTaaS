@@ -7,10 +7,8 @@ class CppMagics(ipym.Magics):
     @ipym.cell_magic
     def cpp(self, line, cell=None):
         """Inject into root."""
-        retval = 0
         if cell:
-            retval = utils.processCppCode(cell)
-        return retval
+            utils.processCppCode(cell)
 
 def load_ipython_extension(ipython):
     ipython.register_magics(CppMagics)
