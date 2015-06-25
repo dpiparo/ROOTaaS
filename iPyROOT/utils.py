@@ -134,7 +134,6 @@ class CanvasCapture(object):
 
     def canJsDisplay(self):
         # to be optimised
-        return False
         primitivesNames = map(lambda prim: prim.Class().GetName() , ROOT.gPad.GetListOfPrimitives())
         for jsNotDrawClassName in _jsNotDrawableClassesNames:
             if jsNotDrawClassName in primitivesNames:
