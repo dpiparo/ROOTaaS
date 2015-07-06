@@ -15,6 +15,10 @@ std::vector<std::string> _TTabComHook(const char* pattern){
 """
 
 class CppCompleter(object):
+    '''
+    Completer which interfaces to the TTabCom of ROOT. It is activated
+    (deactivated) upon the load(unload) of the load of the extension.
+    '''
 
     def __init__(self):
         ROOT.gInterpreter.Declare(_TTabComHookCode)
@@ -27,8 +31,19 @@ class CppCompleter(object):
         self.active = False
 
     def complete(self, ip, event) :
+        '''
+        Autocomplete interfacing to TTabCom. If an accessor of a scope is
+        present in the line, the suggestions are prepended with the line.
+        That's how completers work. For example:
+        myGraph.Set<tab> will return "myGraph.Set+suggestion in the list of
+        suggestions.
+        '''
         if self.active:
-           return ROOT._TTabComHook(event.line)
+           suggestions = ROOT._TTabComHook(event.line)
+           accessors = [".", "->", "::"]
+           if any(accessor in event.line for accessor in accessors):
+               suggestions = [event.line+sugg for sugg in suggestions]
+           return suggestions
         else:
            return []
 
