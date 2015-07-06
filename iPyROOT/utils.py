@@ -74,7 +74,7 @@ def disableJSVis():
     global _enableJSVis
     _enableJSVis = False
 
-def LoadLibrary(libName):
+def _loadLibrary(libName):
    """
    Dl-open a library bypassing the ROOT calling sequence
    """
@@ -84,6 +84,10 @@ def welcomeMsg():
     print "Welcome to ROOTaas Beta"
 
 def toCpp():
+    '''
+    Change the mode of the notebook to CPP. It is preferred to use cell magic,
+    but this option is handy to set up servers and for debugging purposes.
+    '''
     cpptransformer.load_ipython_extension(get_ipython())
     cppcompleter.load_ipython_extension(get_ipython())
     # Change highlight mode
@@ -121,22 +125,33 @@ class StreamCapture(object):
         self.shell.events.register('post_execute', self.post_execute)
 
 class CanvasCapture(object):
+    '''
+    Capture the canvas which is drawn and decide if it should be displayed using
+    jsROOT.
+    '''
     def __init__(self, ip=get_ipython()):
         self.shell = ip
         self.canvas = None
         self.primitivesNames = []
         self.jsUID = 0
 
-    def isCanvasEmpty(self):
-        if not ROOT.gPad: return True
-        return len(ROOT.gPad.GetListOfPrimitives()) == 0
-
-    def hasGPad(self):
+    def _hasGPad(self):
+        '''
+        Check if a gPad is available at all.
+        '''
         if not sys.modules.has_key("ROOT"): return False
         if not ROOT.gPad: return False
         return True
 
-    def getListOfPrimitivesNames(self):
+    def _isCanvasEmpty(self):
+        '''
+        Check if the canvas contains any primitive.
+        '''
+        if not self._hasGPad(): return True
+        return len(ROOT.gPad.GetListOfPrimitives()) == 0
+
+
+    def _getListOfPrimitivesNames(self):
        """
        Get the list of primitives in the pad, recursively descending into
        histograms and graphs looking for fitted functions.
@@ -150,17 +165,24 @@ class CanvasCapture(object):
                primitivesNames.append(function.GetName())
        return sorted(primitivesNames)
 
-    def pre_execute(self):
-        if not self.hasGPad(): return 0
+    def _pre_execute(self):
+        if not self._hasGPad(): return 0
         gPad = ROOT.gPad
         self.primitivesNames = self.getListOfPrimitivesNames()
         self.canvas = gPad
 
-    def hasDifferentPrimitives(self):
+    def _hasDifferentPrimitives(self):
+        '''
+        Check if the graphic primitives in the canvas are different from the
+        previous pass.
+        TODO: names are not enough. According to the primitive, additional
+        checks are to be performed such as position, number of points, mean,
+        rms and so on.
+        '''
         newPrimitivesNames = self.getListOfPrimitivesNames()
         return newPrimitivesNames != self.primitivesNames
 
-    def canJsDisplay(self):
+    def _canJsDisplay(self):
         # to be optimised
         if not _enableJSVis: return False
         primitivesNames = self.primitivesNames
@@ -170,18 +192,22 @@ class CanvasCapture(object):
                 return False
         return True
 
-    def getUID(self):
+    def _getUID(self):
+        '''
+        Every DIV containing a JavaScript snippet must be unique in the
+        notebook. This methods provides a unique identifier.
+        '''
         self.jsUID += 1
         return self.jsUID
 
-    def jsDisplay(self):
+    def _jsDisplay(self):
         # Workaround to have ConvertToJSON work
         pad = ROOT.gROOT.GetListOfCanvases().FindObject(ROOT.gPad.GetName())
         json = ROOT.TBufferJSON.ConvertToJSON(pad, 3)
 	#print "JSON:",json
 
         # Here we could optimise the string manipulation
-        divId = 'root_plot_' + str(self.getUID())
+        divId = 'root_plot_' + str(self._getUID())
         thisJsCode = _jsCode.format(jsCanvasWidth = _jsCanvasWidth,
                                     jsCanvasHeight = _jsCanvasHeight,
                                     jsROOTSourceDir = _jsROOTSourceDir,
@@ -193,44 +219,55 @@ class CanvasCapture(object):
         IPython.display.display(HTML(thisJsCode))
         return 0
 
-    def pngDisplay(self):
+    def _pngDisplay(self):
         ofile = tempfile.NamedTemporaryFile(suffix=".png")
         ROOT.gPad.SaveAs(ofile.name)
         img = IPython.display.Image(filename=ofile.name, format='png', embed=True)
         IPython.display.display(img)
         return 0
 
-    def display(self):
-       if self.canJsDisplay():
-           self.jsDisplay()
+    def _display(self):
+       if self._canJsDisplay():
+           self._jsDisplay()
        else:
-           self.pngDisplay()
+           self._pngDisplay()
 
 
-    def post_execute(self):
-        if self.isCanvasEmpty() or not self.hasGPad(): return 0
+    def _post_execute(self):
+        if self._isCanvasEmpty() or not self._hasGPad(): return 0
         gPad = ROOT.gPad
         isNew = not self.canvas
-        if not (isNew or self.hasDifferentPrimitives()): return 0
+        if not (isNew or self._hasDifferentPrimitives()): return 0
         gPad.Update()
 
         parentCanvas = gPad.GetCanvas()
         if (parentCanvas):
            ROOT.gPad=parentCanvas
 
-        self.display()
+        self._display()
 
         ROOT.gPad=gPad
 
         return 0
 
     def register(self):
-        self.shell.events.register('pre_execute', self.pre_execute)
-        self.shell.events.register('post_execute', self.post_execute)
+        self.shell.events.register('pre_execute', self._pre_execute)
+        self.shell.events.register('post_execute', self._post_execute)
 
 captures = [StreamCapture(sys.stderr),
             StreamCapture(sys.stdout),
             CanvasCapture()]
+
+def setStyle():
+    style=ROOT.gStyle
+    style.SetFuncWidth(3)
+    style.SetHistLineWidth(3)
+    style.SetMarkerStyle(8)
+    style.SetMarkerSize(.5)
+    style.SetMarkerColor(ROOT.kBlue)
+    style.SetPalette(57)
+
+# Here functions are defined to process C++ code
 
 def processCppCodeImpl(cell):
     ROOT.gInterpreter.ProcessLine(cell)
@@ -243,14 +280,3 @@ def processCppCode(cell):
 
 def declareCppCode(cell):
     declareCppCodeImpl(cell)
-
-def setStyle():
-    style=ROOT.gStyle
-    style.SetFuncWidth(3)
-    style.SetHistLineWidth(3)
-    style.SetMarkerStyle(8)
-    style.SetMarkerSize(.5)
-    style.SetMarkerColor(ROOT.kBlue)
-    style.SetPalette(57)
-#    style.SetOptStat(0) # Remove statbox
-
