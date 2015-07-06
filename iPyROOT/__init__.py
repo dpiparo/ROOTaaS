@@ -5,7 +5,6 @@ import ROOT
 import utils
 
 def iPythonize():
-    utils.LoadLibrary("libRint.so")
     utils.setStyle()
     for capture in utils.captures: capture.register()
     ExtensionManager(get_ipython()).load_extension("ROOTaaS.iPyROOT.cppmagic")

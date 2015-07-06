@@ -1,4 +1,4 @@
-
+import utils
 import ROOT
 
 # Jit a wrapper for the ttabcom
@@ -23,9 +23,13 @@ class CppCompleter(object):
     def __init__(self):
         ROOT.gInterpreter.Declare(_TTabComHookCode)
         self.active = True
+        self.firstActivation = True
 
     def activate(self):
         self.active = True
+        if self.firstActivation:
+           utils._loadLibrary("libRint.so")
+           self.firstActivation = False
 
     def deactivate(self):
         self.active = False
